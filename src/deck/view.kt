@@ -77,6 +77,7 @@ fun DeckPane(
             modifier = Modifier.fillMaxSize().padding(5.dp)
         ) {
             first {
+                // TODO change the deck sort to group evolution groups together
                 MultipleCards(
                     cards = deck.deck.cards.sorted(),
                     modifier = Modifier.fillMaxSize()
