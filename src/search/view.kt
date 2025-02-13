@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import deck.DeckOperation
 import deck.DeckViewModel
 import tcg.MultipleCards
 
@@ -53,7 +54,7 @@ fun SearchPane(
                         modifier = Modifier.fillMaxSize()
                     ) { card ->
                         TextButton(
-                            onClick = { deck.add(card) },
+                            onClick = { deck.apply(DeckOperation.AddCard(card)) },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Filled.Add, contentDescription = "Add ${card.name}")

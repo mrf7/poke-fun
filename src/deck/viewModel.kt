@@ -6,35 +6,64 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.lifecycle.ViewModel
 import arrow.core.NonEmptyList
-import arrow.core.getOrElse
-import arrow.core.left
-import arrow.core.leftNel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import tcg.Card
 import tcg.Deck
 import tcg.DeckError
 import tcg.validate
 import utils.map
 
+sealed interface DeckOperation {
+    data class ChangeTitle(val newTitle: String) : DeckOperation
+    data class AddCard(val card: Card) : DeckOperation
+    data object Clear : DeckOperation
+}
+
 class DeckViewModel : ViewModel() {
+    private val actions = MutableStateFlow<List<DeckOperation>>(emptyList())
     private val _deck = mutableStateOf(Deck.INITIAL)
     val deck: Deck by _deck
 
-    private val _problems = mutableStateOf(deck.validate())
-    val problems: NonEmptyList<DeckError>? by _problems.map { it.leftOrNull().also { println(it) } }
+    val problems: NonEmptyList<DeckError>? by _deck.map { it.validate().leftOrNull() }
 
-    fun changeTitle(newTitle: String) {
+    private fun changeTitle(newTitle: String) {
         _deck.update { it.copy(title = newTitle) }
-        _problems.value = deck.validate()
     }
 
-    fun clear() {
+    private fun clear() {
         _deck.update { it.copy(cards = emptyList()) }
-        _problems.value = deck.validate()
     }
 
-    fun add(card: Card) {
+    private fun add(card: Card) {
         _deck.update { it.copy(cards = it.cards + card) }
-        _problems.value = deck.validate()
+    }
+
+    fun apply(operation: DeckOperation) {
+        when (operation) {
+            is DeckOperation.ChangeTitle -> {
+                changeTitle(operation.newTitle)
+            }
+
+            is DeckOperation.AddCard -> {
+                add(card = operation.card)
+            }
+
+            DeckOperation.Clear -> {
+                clear()
+            }
+        }
+        actions.update { it + operation }
+    }
+
+    fun undo() {
+        clear()
+        val redo = actions.value.dropLast(1)
+        actions.update { emptyList() }
+        redo.forEach {
+            apply(it)
+        }
     }
 }
 

@@ -35,14 +35,14 @@ fun DeckPane(
             title = {
                 BasicTextField(
                     deck.deck.title,
-                    onValueChange = deck::changeTitle,
+                    onValueChange = { deck.apply(DeckOperation.ChangeTitle(it)) },
                     textStyle = MaterialTheme.typography.headlineMedium.copy(color = MaterialTheme.colorScheme.primary),
                     singleLine = true,
                 )
             },
             actions = {
                 IconButton(
-                    onClick = { deck.clear() }
+                    onClick = { deck.apply(DeckOperation.Clear) }
                 ) { Icon(Icons.Default.Delete, contentDescription = "Clear") }
 
                 val openPicker = rememberFilePickerLauncher(
@@ -69,8 +69,8 @@ fun DeckPane(
                     enabled = false
                 ) { Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo") }
                 IconButton(
-                    onClick = { },
-                    enabled = false
+                    onClick = { deck.undo() },
+                    enabled = true
                 ) { Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = "Redo") }
             }
         )
