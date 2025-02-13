@@ -19,6 +19,8 @@ import io.github.vinceglb.filekit.core.PickerType
 import org.jetbrains.compose.splitpane.ExperimentalSplitPaneApi
 import org.jetbrains.compose.splitpane.VerticalSplitPane
 import org.jetbrains.compose.splitpane.rememberSplitPaneState
+import tcg.Deck
+import tcg.DeckError
 import tcg.MultipleCards
 import utils.VerticalSplitPaneSplitter
 
@@ -80,6 +82,7 @@ fun DeckPane(
                 // TODO change the deck sort to group evolution groups together
                 MultipleCards(
                     cards = deck.deck.cards.sorted(),
+                    problems = deck.problems ?: emptyList(),
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -100,7 +103,7 @@ fun DeckPane(
 }
 
 @Composable
-fun DeckProblems(problems: List<String>, modifier: Modifier = Modifier) {
+fun DeckProblems(problems: List<DeckError>, modifier: Modifier = Modifier) {
     Surface(modifier) {
         Box(modifier) {
             val scrollState = rememberScrollState()
@@ -108,7 +111,7 @@ fun DeckProblems(problems: List<String>, modifier: Modifier = Modifier) {
                 modifier = Modifier.verticalScroll(scrollState).fillMaxSize()
             ) {
                 for (problem in problems) {
-                    DeckProblemLine(problem)
+                    DeckProblemLine(problem.message)
                 }
             }
             VerticalScrollbar(
