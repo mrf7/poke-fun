@@ -5,7 +5,8 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 
 data class Deck(
-    val title: String, val cards: List<Card>
+    val title: String,
+    val cards: List<Card>,
 ) {
     companion object {
         val INITIAL: Deck = Deck("Awesome Deck", emptyList())
@@ -35,52 +36,69 @@ data class PokemonCard(
     override val name: String,
     override val identifier: String,
     override val category: Category.Pokemon,
-    val type: Type.PokemonType
+    val type: Type.PokemonType,
 ) : Card
 
 data class EnergyCard(
     override val name: String,
     override val identifier: String,
     override val category: Category.Energy,
-    val type: Type.EnergyType
+    val type: Type.EnergyType,
 ) : Card
 
 data class TrainerCard(
-    override val name: String, override val identifier: String, override val category: Category.Trainer
+    override val name: String,
+    override val identifier: String,
+    override val category: Category.Trainer,
 ) : Card
 
 sealed interface Category : Comparable<Category> {
-    data class Pokemon(val stage: PokemonStage) : Category
-    data class Energy(val category: EnergyCategory) : Category
-    data class Trainer(val category: TrainerCategory) : Category
+    data class Pokemon(
+        val stage: PokemonStage,
+    ) : Category
 
-    override fun compareTo(other: Category): Int = when {
-        this is Pokemon && other is Pokemon -> this.stage.compareTo(other.stage)
+    data class Energy(
+        val category: EnergyCategory,
+    ) : Category
 
-        this is Pokemon -> -1
-        other is Pokemon -> 1
-        this is Energy && other is Energy -> this.category.compareTo(other.category)
+    data class Trainer(
+        val category: TrainerCategory,
+    ) : Category
 
-        this is Energy -> -1
-        other is Energy -> 1
-        this is Trainer && other is Trainer -> this.category.compareTo(other.category)
+    override fun compareTo(other: Category): Int =
+        when {
+            this is Pokemon && other is Pokemon -> this.stage.compareTo(other.stage)
 
-        this is Trainer -> -1
-        other is Trainer -> 1
-        else -> 0
-    }
+            this is Pokemon -> -1
+            other is Pokemon -> 1
+            this is Energy && other is Energy -> this.category.compareTo(other.category)
+
+            this is Energy -> -1
+            other is Energy -> 1
+            this is Trainer && other is Trainer -> this.category.compareTo(other.category)
+
+            this is Trainer -> -1
+            other is Trainer -> 1
+            else -> 0
+        }
 }
 
 enum class PokemonStage {
-    Basic, Stage1, Stage2;
+    Basic,
+    Stage1,
+    Stage2,
 }
 
 enum class EnergyCategory {
-    Basic, Special;
+    Basic,
+    Special,
 }
 
 enum class TrainerCategory {
-    Item, Tool, Supporter, Stadium;
+    Item,
+    Tool,
+    Supporter,
+    Stadium,
 }
 
 sealed interface Type {
@@ -89,24 +107,25 @@ sealed interface Type {
         @Composable get() = rememberAsyncImagePainter(imageUrl)
 
     sealed interface PokemonType : Type
-    data object Dragon : PokemonType {
+
+    sealed interface EnergyType : Type
+
+    data object Dragon : Type, PokemonType {
         override val imageUrl =
             "https://archives.bulbagarden.net/media/upload/thumb/8/8a/Dragon-attack.png/40px-Dragon-attack.png"
     }
 
-    data object Colorless : PokemonType {
+    data object Colorless : Type, PokemonType {
         override val imageUrl =
             "https://archives.bulbagarden.net/media/upload/thumb/1/1d/Colorless-attack.png/40px-Colorless-attack.png"
     }
 
-    sealed interface EnergyType : Type
-
-    data object Grass : PokemonType, EnergyType {
+    data object Grass : Type, PokemonType, EnergyType {
         override val imageUrl =
             "https://archives.bulbagarden.net/media/upload/thumb/2/2e/Grass-attack.png/40px-Grass-attack.png"
     }
 
-    data object Water : PokemonType, EnergyType {
+    data object Water : Type, PokemonType, EnergyType {
         override val imageUrl =
             "https://archives.bulbagarden.net/media/upload/thumb/1/11/Water-attack.png/40px-Water-attack.png"
     }
@@ -139,5 +158,12 @@ sealed interface Type {
     data object Metal : Type, PokemonType, EnergyType {
         override val imageUrl =
             "https://archives.bulbagarden.net/media/upload/thumb/6/64/Metal-attack.png/40px-Metal-attack.png"
+    }
+
+    companion object {
+        // TODO kinda yucky and uses reflection but idk how else to handle parsing
+        fun valueOf(string: String): Type? =
+            Type::class.sealedSubclasses.flatMap { it.sealedSubclasses }
+                .find { it.simpleName == string }?.objectInstance
     }
 }
