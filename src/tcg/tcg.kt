@@ -37,6 +37,9 @@ data class PokemonCard(
     override val identifier: String,
     override val category: Category.Pokemon,
     val type: Type.PokemonType,
+//     TODO Base pokemon should never have evolvesFrom and stage 2 shouldn have evolves to, maybe model that?
+    val evolvesFrom: String? = null,
+    val evolvesTo: List<String> = emptyList(),
 ) : Card
 
 data class EnergyCard(

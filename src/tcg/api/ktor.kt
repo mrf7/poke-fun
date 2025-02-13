@@ -20,6 +20,8 @@ data class JsonCard(
     val supertype: Supertype,
     val subtypes: List<String> = emptyList(),
     val types: List<String> = emptyList(),
+    val evolvesFrom: String? = null,
+    val evolvesTo: List<String> = emptyList(),
 ) {
     val tcg: Card
         get() {
@@ -33,7 +35,7 @@ data class JsonCard(
                         else -> throw IllegalArgumentException()
                     }
                     if (type !is Type.PokemonType) error("Invalid card type: $type")
-                    PokemonCard(name, id, category, type)
+                    PokemonCard(name, id, category, type, evolvesFrom, evolvesTo)
                 }
 
                 Supertype.Energy -> {
