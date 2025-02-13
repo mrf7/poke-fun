@@ -25,7 +25,7 @@ object FakePokemonTcgApi : PokemonTcgApi {
     }
 
 
-    private val FakeCards: List<Card> = listOf(
+    val FakeCards: List<Card> = listOf(
         PokemonCard("Bulbasaur", "sv3pt5-1", Category.Pokemon(PokemonStage.Basic), Type.Grass),
         PokemonCard("Charmander", "sv3pt5-4", Category.Pokemon(PokemonStage.Basic), Type.Fire),
         PokemonCard("Squirtle", "sv3pt5-7", Category.Pokemon(PokemonStage.Basic), Type.Water),

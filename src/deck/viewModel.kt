@@ -19,7 +19,7 @@ class DeckViewModel : ViewModel() {
     val deck: Deck by _deck
 
     private val _problems = mutableStateOf(deck.validate())
-    val problems: NonEmptyList<String>? by _problems.map { it.leftOrNull() }
+    val problems: NonEmptyList<String>? by _problems.map { it.leftOrNull().also { println(it) } }
 
     fun changeTitle(newTitle: String) {
         _deck.update { it.copy(title = newTitle) }
