@@ -6,16 +6,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.lifecycle.ViewModel
 import arrow.core.NonEmptyList
+import arrow.core.getOrElse
+import arrow.core.left
+import arrow.core.leftNel
 import tcg.Card
 import tcg.Deck
 import tcg.validate
+import utils.map
 
-class DeckViewModel: ViewModel() {
+class DeckViewModel : ViewModel() {
     private val _deck = mutableStateOf(Deck.INITIAL)
     val deck: Deck by _deck
-    
+
     private val _problems = mutableStateOf(deck.validate())
-    val problems: NonEmptyList<String>? by _problems
+    val problems: NonEmptyList<String>? by _problems.map { it.leftOrNull() }
 
     fun changeTitle(newTitle: String) {
         _deck.update { it.copy(title = newTitle) }
@@ -40,7 +44,7 @@ class DeckViewModel: ViewModel() {
  * by applying the function [block] to the current value.
  */
 public inline fun <T> MutableState<T>.update(crossinline block: (T) -> T) {
-  Snapshot.withMutableSnapshot {
-    value = block(value)
-  }
+    Snapshot.withMutableSnapshot {
+        value = block(value)
+    }
 }

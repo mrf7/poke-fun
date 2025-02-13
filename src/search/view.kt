@@ -33,18 +33,21 @@ fun SearchPane(
                     CircularProgressIndicator(
                         modifier = Modifier.height(20.dp).padding(10.dp)
                     )
+
                 is SearchStatus.Error ->
                     Text(
-                        "Problems during search",
+                        "Problems during search\n${result.message}",
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(10.dp)
                     )
+
                 is SearchStatus.Ok -> when {
                     result.isEmpty -> Text(
                         "No match found",
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(10.dp)
                     )
+
                     else -> MultipleCards(
                         cards = result.results,
                         modifier = Modifier.fillMaxSize()

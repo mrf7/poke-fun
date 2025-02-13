@@ -1,10 +1,17 @@
 package tcg
 
+import arrow.core.Either
 import arrow.core.NonEmptyList
-import arrow.core.toNonEmptyListOrNull
+import arrow.core.raise.ExperimentalRaiseAccumulateApi
+import arrow.core.raise.accumulate
+import arrow.core.raise.either
 
-fun Deck.validate(): NonEmptyList<String>? = buildList {
-    if (cards.size > 60) add("Too many cards")
-    if (cards.size < 60) add("More cards needed")
-    if (title.isBlank()) add("Title is blank")
-}.toNonEmptyListOrNull()
+@OptIn(ExperimentalRaiseAccumulateApi::class)
+fun Deck.validate(): Either<NonEmptyList<String>, Deck> = either {
+    accumulate {
+        ensureOrAccumulate(cards.size < 60) { "Too many cards" }
+        ensureOrAccumulate(cards.size > 60) { "More cards needed" }
+        ensureOrAccumulate(title.isNotBlank()) { "Title cannot be blank" }
+    }
+    this@validate
+}

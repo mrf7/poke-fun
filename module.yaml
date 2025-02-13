@@ -26,6 +26,7 @@ dependencies:
     - io.ktor:ktor-serialization-kotlinx-json:3.0.3
     - io.github.nomisrev:kotlinx-serialization-jsonpath:1.0.0
     - io.github.reactivecircus.cache4k:cache4k:0.14.0
+    - $kotlin.reflect
 
 settings:
     compose:

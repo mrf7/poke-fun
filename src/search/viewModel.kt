@@ -18,7 +18,8 @@ sealed interface SearchStatus {
     data class Ok(val results: List<Card>) : SearchStatus {
         val isEmpty: Boolean = results.isEmpty()
     }
-    data object Error : SearchStatus
+
+    data class Error(val message: String?) : SearchStatus
 }
 
 class SearchViewModel(
@@ -42,7 +43,7 @@ class SearchViewModel(
                 delay(500.milliseconds)
                 Either.catch { api.search(newText) }
                     .fold(
-                        ifLeft = { _result.value = SearchStatus.Error },
+                        ifLeft = { _result.value = SearchStatus.Error(it.localizedMessage) },
                         ifRight = { _result.value = SearchStatus.Ok(it) }
                     )
             }
