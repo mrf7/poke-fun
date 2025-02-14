@@ -6,9 +6,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.lifecycle.ViewModel
 import arrow.core.NonEmptyList
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
 import tcg.Card
 import tcg.Deck
 import tcg.DeckError
@@ -16,61 +13,86 @@ import tcg.validate
 import utils.map
 
 sealed interface DeckOperation {
-    data class ChangeTitle(val newTitle: String) : DeckOperation
-    data class AddCard(val card: Card) : DeckOperation
-    data class RemoveCard(val card: Card) : DeckOperation
-    data object Clear : DeckOperation
+    sealed interface EditDeck : DeckOperation
+    data class ChangeTitle(val newTitle: String) : EditDeck
+    data class AddCard(val card: Card) : EditDeck
+    data class RemoveCard(val card: Card) : EditDeck
+    data object Clear : EditDeck
+    data object Undo : DeckOperation
+    data object Redo : DeckOperation
+}
+
+data class DeckState(
+    val past: List<Deck> = emptyList(),
+    val deck: Deck,
+    val future: List<Deck> = emptyList(),
+) {
+    init {
+        println(this)
+    }
+
+    val hasRedo = future.isNotEmpty()
+    val hasUndo = past.isNotEmpty()
 }
 
 class DeckViewModel : ViewModel() {
-    private val actions = MutableStateFlow<List<DeckOperation>>(emptyList())
-    private val _deck = mutableStateOf(Deck.INITIAL)
-    val deck: Deck by _deck
+    private val _deck = mutableStateOf(DeckState(deck = Deck.INITIAL))
+    val deckState: DeckState by _deck
 
-    val problems: NonEmptyList<DeckError>? by _deck.map { it.validate().leftOrNull() }
-
-    private fun changeTitle(newTitle: String) {
-        _deck.update { it.copy(title = newTitle) }
-    }
-
-    private fun clear() {
-        _deck.update { it.copy(cards = emptyList()) }
-    }
-
-    private fun add(card: Card) {
-        _deck.update { it.copy(cards = it.cards + card) }
-    }
-
-    private fun remove(card: Card) {
-        _deck.update { it.copy(cards = it.cards - card) }
-    }
+    val problems: NonEmptyList<DeckError>? by _deck.map { it.deck.validate().leftOrNull() }
 
     fun apply(operation: DeckOperation) {
-        when (operation) {
-            is DeckOperation.ChangeTitle -> {
-                changeTitle(operation.newTitle)
-            }
-
-            is DeckOperation.AddCard -> {
-                add(card = operation.card)
-            }
-
-            DeckOperation.Clear -> {
-                clear()
-            }
-
-            is DeckOperation.RemoveCard -> remove(operation.card)
+        _deck.update {
+            reduceDeckState(it, operation)
         }
-        actions.update { it + operation }
     }
 
-    fun undo() {
-        clear()
-        val redo = actions.value.dropLast(1)
-        actions.update { emptyList() }
-        redo.forEach {
-            apply(it)
+    private fun reduceDeckState(deckState: DeckState, operation: DeckOperation): DeckState = when (operation) {
+        is DeckOperation.EditDeck -> DeckState(
+            deckState.past + deckState.deck,
+            reduceDeck(deckState.deck, operation),
+            emptyList()
+        )
+
+        DeckOperation.Undo -> {
+            deckState.past.lastOrNull()?.let { new ->
+                deckState.copy(
+                    past = deckState.past.dropLast(1),
+                    deck = new,
+                    future = deckState.future + deckState.deck,
+                )
+            } ?: deckState
         }
+
+        DeckOperation.Redo -> {
+            deckState.future.lastOrNull()?.let { new ->
+                deckState.copy(
+                    past = deckState.past + deckState.deck,
+                    deck = new,
+                    future = deckState.future.dropLast(1),
+                )
+            } ?: deckState
+        }
+    }
+
+    private fun reduceDeck(state: Deck, operation: DeckOperation.EditDeck): Deck = when (operation) {
+        is DeckOperation.ChangeTitle -> {
+            state.copy(title = operation.newTitle)
+        }
+
+        is DeckOperation.AddCard -> {
+            state.copy(cards = state.cards + operation.card)
+        }
+
+        DeckOperation.Clear -> {
+            state.copy(cards = emptyList())
+        }
+
+        is DeckOperation.RemoveCard -> state.copy(cards = state.cards - operation.card)
+    }
+
+    fun reset() {
+        _deck.update { DeckState(deck = Deck.INITIAL) }
     }
 }
 

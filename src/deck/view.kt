@@ -9,6 +9,8 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
@@ -19,7 +21,6 @@ import io.github.vinceglb.filekit.core.PickerType
 import org.jetbrains.compose.splitpane.ExperimentalSplitPaneApi
 import org.jetbrains.compose.splitpane.VerticalSplitPane
 import org.jetbrains.compose.splitpane.rememberSplitPaneState
-import tcg.Deck
 import tcg.DeckError
 import tcg.MultipleCards
 import utils.VerticalSplitPaneSplitter
@@ -27,22 +28,26 @@ import utils.VerticalSplitPaneSplitter
 @OptIn(ExperimentalSplitPaneApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun DeckPane(
-    deck: DeckViewModel,
+    deckViewModel: DeckViewModel,
     modifier: Modifier = Modifier
 ) {
+    val deck by derivedStateOf { deckViewModel.deckState.deck }
     Column(modifier) {
         TopAppBar(
             title = {
                 BasicTextField(
-                    deck.deck.title,
-                    onValueChange = { deck.apply(DeckOperation.ChangeTitle(it)) },
+                    deck.title,
+                    onValueChange = { deckViewModel.apply(DeckOperation.ChangeTitle(it)) },
                     textStyle = MaterialTheme.typography.headlineMedium.copy(color = MaterialTheme.colorScheme.primary),
                     singleLine = true,
                 )
             },
             actions = {
+                IconButton(onClick = { deckViewModel.reset() }) {
+                    Icon(Icons.Default.AcUnit, contentDescription = "Reset")
+                }
                 IconButton(
-                    onClick = { deck.apply(DeckOperation.Clear) }
+                    onClick = { deckViewModel.apply(DeckOperation.Clear) }
                 ) { Icon(Icons.Default.Delete, contentDescription = "Clear") }
 
                 val openPicker = rememberFilePickerLauncher(
@@ -59,18 +64,18 @@ fun DeckPane(
                     /* what to do with the chosen file */
                 }
                 IconButton(
-                    onClick = { savePicker.launch(baseName = deck.deck.title, extension = "deck") },
+                    onClick = { savePicker.launch(baseName = deck.title, extension = "deck") },
                     enabled = false,
                 ) { Icon(Icons.Default.Save, contentDescription = "Save") }
 
                 VerticalDivider()
                 IconButton(
-                    onClick = { deck.undo() },
-                    enabled = true
+                    onClick = { deckViewModel.apply(DeckOperation.Undo) },
+                    enabled = deckViewModel.deckState.hasUndo
                 ) { Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo") }
                 IconButton(
-                    onClick = {},
-                    enabled = false
+                    onClick = { deckViewModel.apply(DeckOperation.Redo) },
+                    enabled = deckViewModel.deckState.hasRedo
                 ) { Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = "Redo") }
             }
         )
@@ -79,14 +84,14 @@ fun DeckPane(
             modifier = Modifier.fillMaxSize().padding(5.dp)
         ) {
             first {
-                // TODO change the deck sort to group evolution groups together
+                // TODO change the deckState sort to group evolution groups together
                 MultipleCards(
-                    cards = deck.deck.cards.sorted(),
-                    problems = deck.problems ?: emptyList(),
+                    cards = deck.cards.sorted(),
+                    problems = deckViewModel.problems ?: emptyList(),
                     modifier = Modifier.fillMaxSize()
                 ) { card ->
                     TextButton(
-                        onClick = { deck.apply(DeckOperation.RemoveCard(card)) },
+                        onClick = { deckViewModel.apply(DeckOperation.RemoveCard(card)) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Filled.Remove, contentDescription = "Add ${card.name}")
@@ -95,7 +100,7 @@ fun DeckPane(
                 }
             }
             second(60.dp) {
-                when (val problems = deck.problems) {
+                when (val problems = deckViewModel.problems) {
                     null -> DeckProblemLine("Everything is fine :)", fontStyle = FontStyle.Italic)
                     else -> DeckProblems(
                         problems,
