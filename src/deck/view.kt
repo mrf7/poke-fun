@@ -65,12 +65,12 @@ fun DeckPane(
 
                 VerticalDivider()
                 IconButton(
-                    onClick = { },
-                    enabled = false
-                ) { Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo") }
-                IconButton(
                     onClick = { deck.undo() },
                     enabled = true
+                ) { Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo") }
+                IconButton(
+                    onClick = {},
+                    enabled = false
                 ) { Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = "Redo") }
             }
         )
