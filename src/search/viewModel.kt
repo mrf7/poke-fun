@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import tcg.Card
 import tcg.api.KtorPokemonTcgApi
 import tcg.api.PokemonTcgApi
+import tcg.api.ResilientPokemonApi
 
 sealed interface SearchStatus {
     data class Loading(val job: Job) : SearchStatus
@@ -23,7 +24,7 @@ sealed interface SearchStatus {
 }
 
 class SearchViewModel(
-    private val api: PokemonTcgApi = KtorPokemonTcgApi()
+    private val api: PokemonTcgApi = ResilientPokemonApi(KtorPokemonTcgApi())
 ) : ViewModel() {
     private val _options = mutableStateOf(SearchOptions.INITIAL)
     val options: SearchOptions by _options
