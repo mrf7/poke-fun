@@ -84,7 +84,15 @@ fun DeckPane(
                     cards = deck.deck.cards.sorted(),
                     problems = deck.problems ?: emptyList(),
                     modifier = Modifier.fillMaxSize()
-                )
+                ) { card ->
+                    TextButton(
+                        onClick = { deck.apply(DeckOperation.RemoveCard(card)) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Filled.Remove, contentDescription = "Add ${card.name}")
+                        Text("Remove", color = MaterialTheme.colorScheme.error)
+                    }
+                }
             }
             second(60.dp) {
                 when (val problems = deck.problems) {

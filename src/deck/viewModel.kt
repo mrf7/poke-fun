@@ -18,6 +18,7 @@ import utils.map
 sealed interface DeckOperation {
     data class ChangeTitle(val newTitle: String) : DeckOperation
     data class AddCard(val card: Card) : DeckOperation
+    data class RemoveCard(val card: Card) : DeckOperation
     data object Clear : DeckOperation
 }
 
@@ -40,6 +41,10 @@ class DeckViewModel : ViewModel() {
         _deck.update { it.copy(cards = it.cards + card) }
     }
 
+    private fun remove(card: Card) {
+        _deck.update { it.copy(cards = it.cards - card) }
+    }
+
     fun apply(operation: DeckOperation) {
         when (operation) {
             is DeckOperation.ChangeTitle -> {
@@ -53,6 +58,8 @@ class DeckViewModel : ViewModel() {
             DeckOperation.Clear -> {
                 clear()
             }
+
+            is DeckOperation.RemoveCard -> remove(operation.card)
         }
         actions.update { it + operation }
     }
