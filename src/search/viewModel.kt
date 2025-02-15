@@ -5,14 +5,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import arrow.core.Either
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import tcg.Card
 import tcg.api.KtorPokemonTcgApi
-import tcg.api.PokemonTcgApi
+import tcg.api.PokemonRepo
 import tcg.api.ResilientPokemonApi
+import kotlin.time.Duration.Companion.milliseconds
 
 sealed interface SearchStatus {
     data class Loading(val job: Job) : SearchStatus
@@ -24,7 +24,7 @@ sealed interface SearchStatus {
 }
 
 class SearchViewModel(
-    private val api: PokemonTcgApi = ResilientPokemonApi(KtorPokemonTcgApi())
+    private val repo: PokemonRepo = PokemonRepo(ResilientPokemonApi(KtorPokemonTcgApi()))
 ) : ViewModel() {
     private val _options = mutableStateOf(SearchOptions.INITIAL)
     val options: SearchOptions by _options
@@ -42,7 +42,7 @@ class SearchViewModel(
             viewModelScope.launch {
                 // give time for the previous job to cancel
                 delay(500.milliseconds)
-                Either.catch { api.search(newText) }
+                Either.catch { repo.search(newText) }
                     .fold(
                         ifLeft = { _result.value = SearchStatus.Error(it.localizedMessage) },
                         ifRight = { _result.value = SearchStatus.Ok(it) }
