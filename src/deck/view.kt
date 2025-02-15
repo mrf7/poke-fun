@@ -1,13 +1,34 @@
 package deck
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileOpen
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -53,19 +74,19 @@ fun DeckPane(
                 val openPicker = rememberFilePickerLauncher(
                     type = PickerType.File(extensions = listOf("deck"))
                 ) { file ->
-                    /* what to do with the chosen file */
+                    deckViewModel.loadFile(file)
                 }
                 IconButton(
                     onClick = { openPicker.launch() },
-                    enabled = false
+                    enabled = true
                 ) { Icon(Icons.Default.FileOpen, contentDescription = "Open") }
 
                 val savePicker = rememberFileSaverLauncher { file ->
-                    /* what to do with the chosen file */
+                    deckViewModel.saveDeck(file)
                 }
                 IconButton(
                     onClick = { savePicker.launch(baseName = deck.title, extension = "deck") },
-                    enabled = false,
+                    enabled = true,
                 ) { Icon(Icons.Default.Save, contentDescription = "Save") }
 
                 VerticalDivider()

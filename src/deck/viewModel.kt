@@ -5,12 +5,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import arrow.core.NonEmptyList
+import arrow.fx.coroutines.parMapNotNull
+import io.github.vinceglb.filekit.core.PlatformFile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import tcg.Card
 import tcg.Deck
 import tcg.DeckError
+import tcg.api.KtorPokemonTcgApi
+import tcg.api.PokemonRepo
+import tcg.api.ResilientPokemonApi
 import tcg.validate
 import utils.map
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 sealed interface DeckOperation {
     sealed interface EditDeck : DeckOperation
@@ -20,6 +31,15 @@ sealed interface DeckOperation {
     data object Clear : EditDeck
     data object Undo : DeckOperation
     data object Redo : DeckOperation
+}
+
+@OptIn(ExperimentalContracts::class)
+inline fun guard(expression: Boolean, elseBlock: () -> Nothing) {
+    contract {
+        callsInPlace(elseBlock, InvocationKind.AT_MOST_ONCE)
+        returns() implies (expression)
+    }
+    if (!expression) elseBlock()
 }
 
 data class DeckState(
@@ -35,7 +55,8 @@ data class DeckState(
     val hasUndo = past.isNotEmpty()
 }
 
-class DeckViewModel : ViewModel() {
+class DeckViewModel(private val repo: PokemonRepo = PokemonRepo(ResilientPokemonApi(KtorPokemonTcgApi()))) :
+    ViewModel() {
     private val _deck = mutableStateOf(DeckState(deck = Deck.INITIAL))
     val deckState: DeckState by _deck
 
@@ -44,6 +65,28 @@ class DeckViewModel : ViewModel() {
     fun apply(operation: DeckOperation) {
         _deck.update {
             reduceDeckState(it, operation)
+        }
+    }
+
+
+    fun saveDeck(file: PlatformFile?) {
+        guard(file != null) { return }
+        viewModelScope.launch(Dispatchers.IO) {
+            val text = deckState.deck.cards.joinToString("\n") { it.identifier }
+            file.file.writeText(deckState.deck.title + "\n$text")
+        }
+    }
+
+    fun loadFile(file: PlatformFile?) {
+        guard(file != null) { return }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val lines = file.file.readLines()
+            val title = lines.firstOrNull() ?: error("empty file")
+            val cards = lines.drop(1).parMapNotNull { line ->
+                line.takeIf { it.isNotBlank() }?.let { repo.getById(it) }
+            }
+            _deck.update { DeckState(deck = Deck(cards = cards, title = title)) }
         }
     }
 
@@ -102,7 +145,7 @@ class DeckViewModel : ViewModel() {
  * Modifies the value in this [MutableState]
  * by applying the function [block] to the current value.
  */
-public inline fun <T> MutableState<T>.update(crossinline block: (T) -> T) {
+inline fun <T> MutableState<T>.update(crossinline block: (T) -> T) {
     Snapshot.withMutableSnapshot {
         value = block(value)
     }
