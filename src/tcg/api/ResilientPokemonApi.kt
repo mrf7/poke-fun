@@ -1,5 +1,6 @@
 package tcg.api
 
+import arrow.core.Either
 import arrow.resilience.CircuitBreaker
 import arrow.resilience.Schedule
 import arrow.resilience.retry
@@ -19,7 +20,7 @@ class ResilientPokemonApi(
         maxResetTimeout = 60.seconds,
     )
 
-    override suspend fun search(name: String): List<Card> {
+    override suspend fun search(name: String): Either<Throwable, List<Card>> {
         return schedule.retry {
             circuitBreaker.protectOrThrow {
                 inner.search(name)
@@ -27,7 +28,7 @@ class ResilientPokemonApi(
         }
     }
 
-    override suspend fun getById(identifier: String): Card? {
+    override suspend fun getById(identifier: String): Either<Throwable, Card?> {
         return schedule.retry {
             circuitBreaker.protectOrThrow {
                 inner.getById(identifier)

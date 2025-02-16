@@ -1,5 +1,7 @@
 package tcg.api
 
+import arrow.core.Either
+import arrow.core.right
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import tcg.Card
@@ -9,19 +11,19 @@ import tcg.PokemonStage
 import tcg.Type
 
 interface PokemonTcgApi {
-    suspend fun search(name: String): List<Card>
-    suspend fun getById(identifier: String): Card?
+    suspend fun search(name: String): Either<Throwable, List<Card>>
+    suspend fun getById(identifier: String): Either<Throwable, Card?>
 }
 
 object FakePokemonTcgApi : PokemonTcgApi {
-    override suspend fun search(name: String): List<Card> {
+    override suspend fun search(name: String): Either<Throwable, List<Card>> {
         delay(3.seconds)
-        return FakeCards.filter { name.contains(name, ignoreCase = true) }
+        return FakeCards.filter { name.contains(name, ignoreCase = true) }.right()
     }
 
-    override suspend fun getById(identifier: String): Card? {
+    override suspend fun getById(identifier: String): Either<Throwable, Card?> = Either.catch {
         delay(1.seconds)
-        return FakeCards.firstOrNull { it.identifier == identifier }
+        FakeCards.firstOrNull { it.identifier == identifier }
     }
 
 

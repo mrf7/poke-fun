@@ -6,8 +6,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import arrow.core.Either
+import arrow.core.Nel
 import arrow.core.NonEmptyList
+import arrow.core.flatMap
+import arrow.core.getOrElse
+import arrow.core.left
+import arrow.core.mapOrAccumulate
+import arrow.core.raise.ExperimentalRaiseAccumulateApi
+import arrow.core.raise.either
 import arrow.fx.coroutines.parMapNotNull
+import arrow.fx.coroutines.parMapOrAccumulate
 import io.github.vinceglb.filekit.core.PlatformFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -38,6 +47,7 @@ inline fun guard(expression: Boolean, elseBlock: () -> Nothing) {
     contract {
         callsInPlace(elseBlock, InvocationKind.AT_MOST_ONCE)
         returns() implies (expression)
+        returns(false) implies (!expression)
     }
     if (!expression) elseBlock()
 }
@@ -77,16 +87,23 @@ class DeckViewModel(private val repo: PokemonRepo = PokemonRepo(ResilientPokemon
         }
     }
 
+    @OptIn(ExperimentalRaiseAccumulateApi::class)
     fun loadFile(file: PlatformFile?) {
         guard(file != null) { return }
 
         viewModelScope.launch(Dispatchers.IO) {
             val lines = file.file.readLines()
             val title = lines.firstOrNull() ?: error("empty file")
-            val cards = lines.drop(1).parMapNotNull { line ->
-                line.takeIf { it.isNotBlank() }?.let { repo.getById(it) }
+            val loadedDeck = lines.drop(1).mapOrAccumulate<Throwable, String, Card> { line ->
+                repo.getById(line).bindOrAccumulate().value ?: raise(IllegalStateException("No card found $line"))
             }
-            _deck.update { DeckState(deck = Deck(cards = cards, title = title)) }
+            _deck.value = loadedDeck.fold(
+                ifLeft = {
+                    println(it.joinToString("\n"))
+                    return@launch
+                },
+                ifRight = { DeckState(deck = Deck(title, it)) }
+            )
         }
     }
 

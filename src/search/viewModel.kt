@@ -42,7 +42,7 @@ class SearchViewModel(
             viewModelScope.launch {
                 // give time for the previous job to cancel
                 delay(500.milliseconds)
-                Either.catch { repo.search(newText) }
+                repo.search(newText)
                     .fold(
                         ifLeft = { _result.value = SearchStatus.Error(it.localizedMessage) },
                         ifRight = { _result.value = SearchStatus.Ok(it) }

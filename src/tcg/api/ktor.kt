@@ -2,6 +2,8 @@
 
 package tcg.api
 
+import arrow.core.Either
+import deck.guard
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -85,6 +87,7 @@ data class JsonMultipleResult(
 )
 
 fun HttpClientWithJson(): HttpClient = HttpClient {
+    expectSuccess = true
     install(ContentNegotiation) {
         json(Json {
             ignoreUnknownKeys = true
@@ -95,8 +98,8 @@ fun HttpClientWithJson(): HttpClient = HttpClient {
 class KtorPokemonTcgApi(
     private val httpClient: HttpClient = HttpClientWithJson()
 ) : PokemonTcgApi {
-    override suspend fun search(name: String): List<Card> {
-        if (name.isBlank()) return emptyList()
+    override suspend fun search(name: String): Either<Throwable, List<Card>> = Either.catch {
+        guard(name.isNotBlank()) { return@catch emptyList() }
         val response = httpClient.get("https://api.pokemontcg.io/v2/cards") {
             url {
                 // bound the search to the newest regulation mark (do not show old cards)
@@ -105,13 +108,13 @@ class KtorPokemonTcgApi(
                 parameters.append("pageSize", "30")
             }
         }
-        if (response.status != HttpStatusCode.OK) return emptyList()
-        return response.body<JsonMultipleResult>().data.map { it.tcg }
+//        if (response.status != HttpStatusCode.OK) return@catch emptyList()
+        response.body<JsonMultipleResult>().data.map { it.tcg }
     }
 
-    override suspend fun getById(identifier: String): Card? {
+    override suspend fun getById(identifier: String): Either<Throwable, Card?> = Either.catch {
         val response = httpClient.get("https://api.pokemontcg.io/v2/cards/$identifier")
-        if (response.status != HttpStatusCode.OK) return null
-        return response.body<JsonSingleResult>().data.tcg
+        if (response.status != HttpStatusCode.OK) return@catch null
+        response.body<JsonSingleResult>().data.tcg
     }
 }
