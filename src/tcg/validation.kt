@@ -4,9 +4,7 @@ package tcg
 
 import arrow.core.Either
 import arrow.core.EitherNel
-import arrow.core.Nel
 import arrow.core.NonEmptyList
-import arrow.core.compareTo
 import arrow.core.mapValuesNotNull
 import arrow.core.raise.ExperimentalRaiseAccumulateApi
 import arrow.core.raise.accumulate
@@ -42,6 +40,7 @@ sealed interface DeckError {
         override val message: String = "No evolution found for ${card.name}, add a ${card.evolvesFrom}"
     }
 }
+
 
 fun Deck.validate(): Either<NonEmptyList<DeckError>, Deck> = either {
     accumulate {

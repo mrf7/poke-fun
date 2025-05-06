@@ -1,13 +1,11 @@
 package tcg.api
 
 import arrow.core.Either
-import arrow.core.right
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.test.runTest
 import tcg.Card
+import tcg.Deck
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class ResilientPokemonApiTest {
 
@@ -30,5 +28,15 @@ class ResilientPokemonApiTest {
         val api = ResilientPokemonApi(fake)
         api.search("") shouldBe Either.Right(emptyList())
         api.search("") shouldBe Either.Right(emptyList())
+    }
+
+    @Test
+    fun test2() {
+        val cards = FakePokemonTcgApi.FakeCards
+            .take(1)
+            .flatMap { card -> List(5) { card } }
+
+        Deck(cards = cards, title = "")
+
     }
 }
